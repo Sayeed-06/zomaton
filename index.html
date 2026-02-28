@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zomato KPT Redesign Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            900: '#7f1d1d',
+                        },
+                        neutral: {
+                            50: '#fafaf9',
+                            100: '#f5f5f4',
+                            200: '#e7e5e4',
+                            800: '#292524',
+                            900: '#1c1917',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fafaf9;
+            color: #292524;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+        .arch-node {
+            transition: all 0.3s ease;
+        }
+        .arch-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #dc2626;
+        }
+        .nav-link.active {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border-right: 4px solid #dc2626;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f5f5f4; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen font-sans">
+
+    <!-- Chosen Palette: Warm Neutrals (Stone/Zinc) with Zomato Crimson Accents (#dc2626) -->
+    <!-- Application Structure Plan: The SPA uses a sticky sidebar dashboard layout. It transforms the linear presentation deck into an interactive story. Users begin with the Executive Summary (Problem/Impact), explore the 4-layer solution via interactive tabs, interact with a dynamic financial simulation to prove ROI, and finally view the technical architecture. This structure empowers stakeholders to grasp the business value instantly before diving into technical weeds. -->
+    <!-- Visualization & Content Choices: 
+         1. Exec Summary: KPI Cards (Goal: Inform) -> Quick synthesis of the problem scale.
+         2. Root Cause: Grid layout (Goal: Organize) -> Easy comparison of current failure points.
+         3. 4-Layer Solution: Interactive Tabs (Goal: Organize/Inform) -> Prevents cognitive overload, allows drill-down into specific interventions.
+         4. Impact Simulation: Range Sliders + Chart.js Bar Chart (Goal: Change/Compare) -> Allows judges/execs to play with assumptions and see real-time financial savings (NO SVG, Canvas used). 
+         5. Architecture: HTML/CSS CSS Flexbox/Grid map (Goal: Relationships) -> Clean, responsive mapping of data flow without relying on external SVGs or Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="w-full md:w-64 bg-white border-r border-neutral-200 flex-shrink-0 md:h-screen md:sticky md:top-0 z-50 shadow-sm overflow-y-auto">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-brand-700 tracking-tight leading-tight">Zomato KPT</h1>
+            <p class="text-xs text-neutral-500 mt-1 uppercase tracking-wider font-semibold">Signal Enrichment</p>
+        </div>
+        <div class="flex flex-row md:flex-col overflow-x-auto md:overflow-x-hidden border-t border-neutral-100">
+            <a href="#summary" class="nav-link active px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">Executive Summary</a>
+            <a href="#problem" class="nav-link px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">Root Cause Diagnosis</a>
+            <a href="#solution" class="nav-link px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">The 4-Layer Solution</a>
+            <a href="#simulation" class="nav-link px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">Impact Simulation</a>
+            <a href="#architecture" class="nav-link px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">System Architecture</a>
+            <a href="#xfactor" class="nav-link px-6 py-4 text-sm font-medium text-neutral-600 hover:bg-neutral-50 transition-colors whitespace-nowrap">The X-Factor</a>
+        </div>
+    </nav>
+
+    <main class="flex-grow p-6 md:p-12 overflow-hidden max-w-7xl mx-auto w-full">
+        
+        <header class="mb-12 border-b border-neutral-200 pb-8">
+            <div class="inline-block bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-xs font-bold mb-4 uppercase tracking-wider">Hackathon 2024 Submission</div>
+            <h2 class="text-4xl md:text-5xl font-extrabold text-neutral-900 mb-4 tracking-tight">Improving Kitchen Prep Time (KPT) Prediction</h2>
+            <p class="text-xl text-neutral-600 max-w-3xl leading-relaxed">Reducing rider wait time and ETA volatility at scale through behavior-aware signal enrichment and system redesign.</p>
+        </header>
+
+        <section id="summary" class="mb-20 scroll-mt-12">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">Executive Summary</h3>
+                <p class="text-neutral-600">The KPT Paradox: Kitchen Prep Time is the "Black Box" of food delivery. Currently, 70% of Food-Ready (FOR) signals are noisy, leading to massive financial and experiential costs. Our goal is to transition from trusting flawed merchant observations to inferring reality.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm border-t-4 border-t-brand-500">
+                    <p class="text-sm text-neutral-500 font-semibold uppercase">The Problem</p>
+                    <p class="text-3xl font-bold text-neutral-900 mt-2 mb-1">₹40B+</p>
+                    <p class="text-sm text-neutral-600">Annual rider idle-time cost due to label bias.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm border-t-4 border-t-neutral-800">
+                    <p class="text-sm text-neutral-500 font-semibold uppercase">Data Quality</p>
+                    <p class="text-3xl font-bold text-neutral-900 mt-2 mb-1">70%</p>
+                    <p class="text-sm text-neutral-600">Noisy FOR signals (marked early/late).</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm border-t-4 border-t-green-500">
+                    <p class="text-sm text-neutral-500 font-semibold uppercase">Projected Impact (Wait)</p>
+                    <p class="text-3xl font-bold text-green-600 mt-2 mb-1">↓ 18%</p>
+                    <p class="text-sm text-neutral-600">Reduction in rider wait time per order.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm border-t-4 border-t-blue-500">
+                    <p class="text-sm text-neutral-500 font-semibold uppercase">Projected Impact (ETA)</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-2 mb-1">↑ 14%</p>
+                    <p class="text-sm text-neutral-600">Improvement in P90 ETA accuracy.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="problem" class="mb-20 scroll-mt-12">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">Root Cause Diagnosis</h3>
+                <p class="text-neutral-600">Why the current KPT label pipeline (Order -> Merchant marks FOR -> Model learns) fails at scale.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-red-100 text-brand-600 rounded-full flex items-center justify-center text-2xl font-bold mb-4">⏱️</div>
+                    <h4 class="text-lg font-bold text-neutral-900 mb-2">Merchant Gaming</h4>
+                    <p class="text-neutral-600 text-sm">Merchants mark "Ready" before food is cooked simply to stop the "Rider Arrival" penalty timer, destroying label integrity.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-neutral-100 text-neutral-600 rounded-full flex items-center justify-center text-2xl font-bold mb-4">👁️</div>
+                    <h4 class="text-lg font-bold text-neutral-900 mb-2">Visibility Gap</h4>
+                    <p class="text-neutral-600 text-sm">The ML model only sees Zomato orders. It has zero visibility into the 50 walk-in customers currently causing a massive queue in the kitchen.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mb-4">🛵</div>
+                    <h4 class="text-lg font-bold text-neutral-900 mb-2">Proximity Bias</h4>
+                    <p class="text-neutral-600 text-sm">Merchants physically look for the rider and only mark FOR when they see them pull up, conflating travel time with prep time.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="mb-20 scroll-mt-12 bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">The 4-Layer Solution</h3>
+                <p class="text-neutral-600">A multi-layered Signal Enrichment Engine designed to clean merchant data before it reaches the predictive ML model. Click through the layers below to explore the intervention mechanics.</p>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-8">
+                <div class="w-full lg:w-1/3 flex flex-col gap-2">
+                    <button class="layer-tab active text-left px-5 py-4 rounded-lg border-2 border-brand-500 bg-brand-50 font-bold text-brand-700 transition-all" data-target="layer1">
+                        1. Bias Correction Engine
+                    </button>
+                    <button class="layer-tab text-left px-5 py-4 rounded-lg border-2 border-transparent hover:bg-neutral-50 font-bold text-neutral-600 transition-all" data-target="layer2">
+                        2. Kitchen Load Estimator
+                    </button>
+                    <button class="layer-tab text-left px-5 py-4 rounded-lg border-2 border-transparent hover:bg-neutral-50 font-bold text-neutral-600 transition-all" data-target="layer3">
+                        3. Workflow Redesign
+                    </button>
+                    <button class="layer-tab text-left px-5 py-4 rounded-lg border-2 border-transparent hover:bg-neutral-50 font-bold text-neutral-600 transition-all" data-target="layer4">
+                        4. Smart Pickup Shelves
+                    </button>
+                </div>
+                
+                <div class="w-full lg:w-2/3 bg-neutral-50 rounded-xl p-8 border border-neutral-200 relative min-h-[300px]">
+                    <div id="layer1" class="layer-content active block">
+                        <span class="inline-block bg-brand-100 text-brand-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-3">Passive Layer</span>
+                        <h4 class="text-2xl font-bold text-neutral-900 mb-4">Merchant Bias Index (MBI)</h4>
+                        <p class="text-neutral-700 mb-4">Statistical correction of historical marking habits. Scalable across 300K+ merchants with zero operational friction.</p>
+                        <div class="bg-white p-4 rounded-lg border border-neutral-200 font-mono text-sm text-neutral-800 mb-4">
+                            True_KPT &approx; FOR_time - Rider_offset<br>
+                            <span class="text-neutral-500">Where Rider_offset = Rider arrival - FOR mark</span>
+                        </div>
+                        <ul class="list-disc pl-5 text-neutral-700 space-y-2">
+                            <li><strong>Output:</strong> Merchant Reliability Score</li>
+                            <li><strong>Action:</strong> If a merchant consistently marks FOR 2 mins after rider arrival, their score drops, and a "Safety Buffer" is applied to dispatch.</li>
+                        </ul>
+                    </div>
+
+                    <div id="layer2" class="layer-content hidden">
+                        <span class="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-3">Contextual Layer</span>
+                        <h4 class="text-2xl font-bold text-neutral-900 mb-4">Kitchen Load Estimator (KLS)</h4>
+                        <p class="text-neutral-700 mb-4">Creates a dynamic Kitchen Load Score based on hyper-local density to proxy total kitchen heat, including non-Zomato load.</p>
+                        <ul class="list-disc pl-5 text-neutral-700 space-y-2 mb-4">
+                            <li>Order arrival rate (15-min rolling window in 500m radius)</li>
+                            <li>Item complexity weights (e.g., Pizza vs. Ice Cream)</li>
+                            <li>Time-of-day multipliers</li>
+                            <li>Merchant capacity classification</li>
+                        </ul>
+                        <p class="text-sm font-semibold text-neutral-900 bg-white p-3 rounded border border-neutral-200">Result: Accounts for unobserved walk-in traffic causing KPT spikes.</p>
+                    </div>
+
+                    <div id="layer3" class="layer-content hidden">
+                        <span class="inline-block bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-3">Workflow Layer</span>
+                        <h4 class="text-2xl font-bold text-neutral-900 mb-4">Workflow Redesign</h4>
+                        <p class="text-neutral-700 mb-4">Re-engineering the merchant app interface to capture granular, time-series prep signals.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-4 rounded border border-neutral-200">
+                                <h5 class="font-bold text-neutral-900">1. Predicted Ready Suggestion</h5>
+                                <p class="text-sm text-neutral-600 mt-1">Merchant adjusts a predicted slider instead of a raw manual input, anchoring their estimate.</p>
+                            </div>
+                            <div class="bg-white p-4 rounded border border-neutral-200">
+                                <h5 class="font-bold text-neutral-900">2. "Cooking Started" Signal</h5>
+                                <p class="text-sm text-neutral-600 mt-1">Separates systemic queue delay (waiting for a pan) from actual cooking duration.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="layer4" class="layer-content hidden">
+                        <span class="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-3">Hardware Layer</span>
+                        <h4 class="text-2xl font-bold text-neutral-900 mb-4">Smart Pickup Shelves</h4>
+                        <p class="text-neutral-700 mb-4">Zero-human-touch validation deployed specifically for the top 20% high-GMV merchants.</p>
+                        <div class="flex items-center gap-4 bg-white p-4 rounded border border-neutral-200 mb-4">
+                            <div class="text-4xl">⚖️</div>
+                            <div>
+                                <p class="font-bold text-neutral-900">Weight Sensor / IR Beam Integration</p>
+                                <p class="text-sm text-neutral-600">When food is placed on the shelf, an auto "Ready" timestamp is generated, removing human bias completely.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="simulation" class="mb-20 scroll-mt-12">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">Quantitative Impact Simulation</h3>
+                <p class="text-neutral-600">Interactive financial model simulating the ROI of the enrichment layer based on Zomato's operating scale (5M daily orders). Adjust the expected system improvements below to see the impact on rider costs and operational efficiency.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+                    <h4 class="font-bold text-neutral-900 mb-6 uppercase text-sm tracking-wide border-b pb-2">Simulation Parameters</h4>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-neutral-700">Rider Wait Time Reduction</label>
+                            <span id="wait-val" class="text-sm font-bold text-brand-600">18%</span>
+                        </div>
+                        <input type="range" id="wait-slider" min="0" max="30" value="18" class="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-brand-600">
+                        <p class="text-xs text-neutral-500 mt-2">Baseline: 6.0 mins. System target: 15-25%.</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-semibold text-neutral-700">ETA Error (P90) Reduction</label>
+                            <span id="eta-val" class="text-sm font-bold text-blue-600">14%</span>
+                        </div>
+                        <input type="range" id="eta-slider" min="0" max="25" value="14" class="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                        <p class="text-xs text-neutral-500 mt-2">Drives order cancellation drops.</p>
+                    </div>
+                    
+                    <div class="mt-8 bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+                        <p class="text-xs text-neutral-500 font-mono mb-1">Fixed Variables:</p>
+                        <ul class="text-xs text-neutral-600 space-y-1">
+                            <li>Orders/Day = 5,000,000</li>
+                            <li>Rider Cost/Min = ₹4.0</li>
+                            <li>Base Cancel Rate = 2.0%</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 flex flex-col gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-brand-50 p-6 rounded-xl border border-brand-100 flex flex-col justify-center">
+                            <p class="text-sm text-brand-800 font-semibold mb-1">Projected Annual Savings</p>
+                            <p class="text-4xl font-extrabold text-brand-600 tracking-tight" id="savings-display">₹7.88 B</p>
+                            <p class="text-xs text-brand-700 mt-2">From reduced rider idle time.</p>
+                        </div>
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 flex flex-col justify-center">
+                            <p class="text-sm text-blue-800 font-semibold mb-1">Orders Saved Daily</p>
+                            <p class="text-4xl font-extrabold text-blue-600 tracking-tight" id="orders-saved-display">8,400</p>
+                            <p class="text-xs text-blue-700 mt-2">From reduced ETA-driven cancellations.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+                        <h4 class="font-bold text-neutral-900 mb-4 uppercase text-sm tracking-wide text-center">Average Rider Wait Time per Order (Minutes)</h4>
+                        <div class="chart-container">
+                            <canvas id="impactChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="mb-20 scroll-mt-12">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">System Architecture Layer</h3>
+                <p class="text-neutral-600">High-level mapping of how raw operational signals are ingested, cleaned via the Enrichment Layer, and passed to existing ML pipelines to influence dispatch optimization.</p>
+            </div>
+
+            <div class="bg-neutral-800 rounded-2xl p-6 md:p-10 shadow-lg overflow-hidden relative font-mono text-sm">
+                <!-- Data flow map using HTML/CSS Flexbox -->
+                
+                <!-- Level 1: Ingestion -->
+                <div class="flex flex-col items-center mb-8 relative z-10">
+                    <div class="text-neutral-400 text-xs uppercase mb-2 font-bold tracking-widest">Raw Signals</div>
+                    <div class="flex flex-wrap justify-center gap-3 w-full">
+                        <div class="bg-neutral-700 text-neutral-200 px-4 py-2 rounded border border-neutral-600 arch-node shadow-sm">Merchant FOR</div>
+                        <div class="bg-neutral-700 text-neutral-200 px-4 py-2 rounded border border-neutral-600 arch-node shadow-sm">Rider Arrival</div>
+                        <div class="bg-neutral-700 text-neutral-200 px-4 py-2 rounded border border-neutral-600 arch-node shadow-sm">Order Density</div>
+                        <div class="bg-neutral-700 text-neutral-200 px-4 py-2 rounded border border-neutral-600 arch-node shadow-sm">Shelf Sensors</div>
+                    </div>
+                </div>
+
+                <!-- Down Arrow -->
+                <div class="flex justify-center text-neutral-500 mb-4 text-xl font-bold">↓</div>
+
+                <!-- Level 2: Stream -->
+                <div class="flex justify-center mb-8 relative z-10">
+                    <div class="bg-blue-900/40 text-blue-300 border border-blue-700 px-8 py-3 rounded-lg font-bold w-full max-w-md text-center arch-node backdrop-blur-sm">
+                        Event Ingestion (Kafka Stream)
+                    </div>
+                </div>
+
+                <!-- Down Arrow -->
+                <div class="flex justify-center text-neutral-500 mb-4 text-xl font-bold">↓</div>
+
+                <!-- Level 3: Enrichment Layer -->
+                <div class="border border-brand-500/50 bg-brand-900/10 rounded-xl p-6 mb-8 relative z-10">
+                    <div class="absolute -top-3 left-6 bg-neutral-800 text-brand-400 px-2 text-xs font-bold uppercase tracking-widest">Signal Enrichment Layer</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+                        <div class="bg-neutral-900 text-neutral-300 border border-neutral-700 p-4 rounded text-center arch-node">
+                            <div class="font-bold text-white mb-1">Bias Engine</div>
+                            <div class="text-xs text-neutral-500">Corrects historical lag</div>
+                        </div>
+                        <div class="bg-neutral-900 text-neutral-300 border border-neutral-700 p-4 rounded text-center arch-node">
+                            <div class="font-bold text-white mb-1">Load Estimator</div>
+                            <div class="text-xs text-neutral-500">Proxies kitchen rush</div>
+                        </div>
+                        <div class="bg-neutral-900 text-neutral-300 border border-neutral-700 p-4 rounded text-center arch-node">
+                            <div class="font-bold text-white mb-1">Reliability Score</div>
+                            <div class="text-xs text-neutral-500">Calculates MBI buffer</div>
+                        </div>
+                        <div class="bg-neutral-900 text-neutral-300 border border-neutral-700 p-4 rounded text-center arch-node">
+                            <div class="font-bold text-white mb-1">Rush Predictor</div>
+                            <div class="text-xs text-neutral-500">Density analysis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Down Arrow -->
+                <div class="flex justify-center text-neutral-500 mb-4 text-xl font-bold">↓</div>
+
+                <!-- Level 4: Core Models -->
+                <div class="flex flex-col items-center gap-6 relative z-10">
+                    <div class="bg-green-900/30 text-green-400 border border-green-700 px-6 py-3 rounded-lg text-center w-full max-w-sm arch-node font-bold">
+                        Clean KPT Signal Generator
+                    </div>
+                    <div class="text-neutral-500 text-xl font-bold">↓</div>
+                    <div class="bg-neutral-700 text-white border border-neutral-600 px-6 py-3 rounded-lg text-center w-full max-w-sm arch-node">
+                        Existing KPT Prediction Model
+                    </div>
+                    <div class="text-neutral-500 text-xl font-bold">↓</div>
+                    <div class="bg-brand-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-brand-500 px-6 py-4 rounded-lg text-center w-full max-w-sm arch-node font-bold text-lg">
+                        Dispatch + ETA Engine
+                    </div>
+                </div>
+
+                <!-- Background decoration -->
+                <div class="absolute inset-0 opacity-10 flex flex-col justify-between pointer-events-none">
+                    <div class="w-full h-[1px] bg-white mt-12"></div>
+                    <div class="w-full h-[1px] bg-white"></div>
+                    <div class="w-full h-[1px] bg-white"></div>
+                    <div class="w-full h-[1px] bg-white mb-12"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="xfactor" class="mb-12 scroll-mt-12">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-neutral-800 mb-2">The X-Factor: Strategic Execution</h3>
+                <p class="text-neutral-600">Technical solutions fail without behavioral alignment. We address the operational reality through incentive gamification and a phased hardware rollout.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gradient-to-br from-brand-50 to-white p-8 rounded-xl border border-brand-200">
+                    <div class="text-3xl mb-4">🏆</div>
+                    <h4 class="text-xl font-bold text-neutral-900 mb-3">Merchant Gamification</h4>
+                    <p class="text-neutral-700 mb-4 leading-relaxed">Introducing a <strong>"Ready-on-Time" Score</strong> in the Merchant App. This shifts KPT accuracy from a technical burden to a business incentive.</p>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-start">
+                            <span class="text-green-600 mr-2">▲</span>
+                            <span><strong>High Score:</strong> Rewards with "Top Rated" profile badges and increased platform visibility.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-brand-600 mr-2">▼</span>
+                            <span><strong>Low Score:</strong> Systemic warnings regarding potential dispatch delays due to unreliability.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-gradient-to-br from-neutral-100 to-white p-8 rounded-xl border border-neutral-200">
+                    <div class="text-3xl mb-4">🚀</div>
+                    <h4 class="text-xl font-bold text-neutral-900 mb-3">Phased Tiered Rollout</h4>
+                    <p class="text-neutral-700 mb-4 leading-relaxed">A low-risk, incremental deployment strategy avoiding massive upfront Capex.</p>
+                    <ul class="space-y-4 text-sm relative border-l-2 border-neutral-300 ml-2 pl-4">
+                        <li class="relative">
+                            <div class="absolute w-3 h-3 bg-brand-500 rounded-full -left-[23px] top-1"></div>
+                            <strong>Phase 1: Bias Correction (All Merchants)</strong><br>
+                            <span class="text-neutral-500">Zero operational change. Immediate software impact.</span>
+                        </li>
+                        <li class="relative">
+                            <div class="absolute w-3 h-3 bg-neutral-400 rounded-full -left-[23px] top-1"></div>
+                            <strong>Phase 2: Workflow UI (All Merchants)</strong><br>
+                            <span class="text-neutral-500">App update for "Cooking Started" toggles.</span>
+                        </li>
+                        <li class="relative">
+                            <div class="absolute w-3 h-3 bg-neutral-400 rounded-full -left-[23px] top-1"></div>
+                            <strong>Phase 3: Hardware (Top 20% GMV)</strong><br>
+                            <span class="text-neutral-500">Pilot smart shelves in high-density hubs (e.g., CyberHub).</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation Logic
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '-20% 0px -70% 0px',
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active', 'bg-brand-100', 'text-brand-700', 'border-r-4', 'border-brand-600');
+                            link.classList.add('text-neutral-600', 'border-transparent');
+                            if (link.getAttribute('href') === `#${entry.target.id}`) {
+                                link.classList.remove('text-neutral-600', 'border-transparent');
+                                link.classList.add('active', 'bg-brand-100', 'text-brand-700', 'border-r-4', 'border-brand-600');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => observer.observe(section));
+
+            // Layer Tabs Logic
+            const tabs = document.querySelectorAll('.layer-tab');
+            const contents = document.querySelectorAll('.layer-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Reset all
+                    tabs.forEach(t => {
+                        t.classList.remove('border-brand-500', 'bg-brand-50', 'text-brand-700', 'active');
+                        t.classList.add('border-transparent', 'text-neutral-600');
+                    });
+                    contents.forEach(c => {
+                        c.classList.remove('block');
+                        c.classList.add('hidden');
+                    });
+
+                    // Activate clicked
+                    tab.classList.remove('border-transparent', 'text-neutral-600');
+                    tab.classList.add('border-brand-500', 'bg-brand-50', 'text-brand-700', 'active');
+                    
+                    const targetId = tab.getAttribute('data-target');
+                    const targetContent = document.getElementById(targetId);
+                    targetContent.classList.remove('hidden');
+                    targetContent.classList.add('block');
+                });
+            });
+
+            // Simulation Logic & Chart Setup
+            const waitSlider = document.getElementById('wait-slider');
+            const etaSlider = document.getElementById('eta-slider');
+            const waitValDisplay = document.getElementById('wait-val');
+            const etaValDisplay = document.getElementById('eta-val');
+            const savingsDisplay = document.getElementById('savings-display');
+            const ordersSavedDisplay = document.getElementById('orders-saved-display');
+
+            // Constants
+            const DAILY_ORDERS = 5000000;
+            const AVG_RIDER_COST_PER_MIN = 4.0;
+            const DAYS_IN_YEAR = 365;
+            const BASE_WAIT_TIME = 6.0;
+            const BASE_CANCEL_RATE = 0.02;
+
+            // Chart Setup
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            Chart.defaults.font.family = "'Inter', 'system-ui', 'sans-serif'";
+            Chart.defaults.color = '#57534e'; // neutral-600
+            
+            const impactChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Baseline Wait', 'Improved Wait'],
+                    datasets: [{
+                        label: 'Minutes per Order',
+                        data: [BASE_WAIT_TIME, BASE_WAIT_TIME * (1 - 0.18)],
+                        backgroundColor: [
+                            '#d6d3d1', // neutral-300
+                            '#16a34a'  // green-600
+                        ],
+                        borderRadius: 6,
+                        barThickness: 60
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#292524',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14 },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(2) + ' Mins';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 7,
+                            grid: { color: '#f5f5f4' }, // neutral-100
+                            title: { display: true, text: 'Minutes' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Update function
+            function updateSimulation() {
+                const waitReductionPct = parseFloat(waitSlider.value) / 100;
+                const etaReductionPct = parseFloat(etaSlider.value) / 100;
+
+                // Update UI Labels
+                waitValDisplay.textContent = waitSlider.value + '%';
+                etaValDisplay.textContent = etaSlider.value + '%';
+
+                // Math: Wait Time
+                const newWaitTime = BASE_WAIT_TIME * (1 - waitReductionPct);
+                const baselineCost = DAILY_ORDERS * BASE_WAIT_TIME * AVG_RIDER_COST_PER_MIN * DAYS_IN_YEAR;
+                const newCost = DAILY_ORDERS * newWaitTime * AVG_RIDER_COST_PER_MIN * DAYS_IN_YEAR;
+                const annualSavings = baselineCost - newCost;
+
+                // Math: Cancellations
+                const ordersSaved = DAILY_ORDERS * BASE_CANCEL_RATE * etaReductionPct;
+
+                // Format Currency (Billions)
+                const savingsBillions = (annualSavings / 1000000000).toFixed(2);
+                savingsDisplay.textContent = `₹${savingsBillions} B`;
+                
+                // Format Number
+                ordersSavedDisplay.textContent = Math.round(ordersSaved).toLocaleString();
+
+                // Update Chart
+                impactChart.data.datasets[0].data[1] = newWaitTime;
+                
+                // Dynamic color based on savings logic
+                if (waitReductionPct > 0.1) {
+                    impactChart.data.datasets[0].backgroundColor[1] = '#16a34a'; // Green
+                } else if (waitReductionPct > 0) {
+                    impactChart.data.datasets[0].backgroundColor[1] = '#f59e0b'; // Amber
+                } else {
+                    impactChart.data.datasets[0].backgroundColor[1] = '#ef4444'; // Red
+                }
+
+                impactChart.update();
+            }
+
+            // Bind Events
+            waitSlider.addEventListener('input', updateSimulation);
+            etaSlider.addEventListener('input', updateSimulation);
+            
+            // Init run
+            updateSimulation();
+        });
+    </script>
+</body>
+</html>
